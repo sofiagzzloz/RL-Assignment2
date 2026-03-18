@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+models_DQN_smoke/
+models_DQN_v01/
