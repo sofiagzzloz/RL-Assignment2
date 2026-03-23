@@ -44,7 +44,9 @@ class ReplayBuffer:
     def add(self, transition: Transition) -> None:
         self.buffer.append(transition)
 
-    def sample(self, batch_size: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def sample(
+        self, batch_size: int
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         batch = random.sample(self.buffer, batch_size)
         states = np.array([t.state for t in batch], dtype=np.float32)
         actions = np.array([t.action for t in batch], dtype=np.int64)
@@ -55,7 +57,9 @@ class ReplayBuffer:
 
 
 class QNetwork(nn.Module):
-    def __init__(self, state_size: int, action_size: int, hidden_sizes: List[int]) -> None:
+    def __init__(
+        self, state_size: int, action_size: int, hidden_sizes: List[int]
+    ) -> None:
         super().__init__()
         layers: List[nn.Module] = []
         input_size = state_size
@@ -102,8 +106,12 @@ class DQNAgent:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.online_net = QNetwork(state_size, action_size, hidden_sizes=[128, 128]).to(self.device)
-        self.target_net = QNetwork(state_size, action_size, hidden_sizes=[128, 128]).to(self.device)
+        self.online_net = QNetwork(state_size, action_size, hidden_sizes=[128, 128]).to(
+            self.device
+        )
+        self.target_net = QNetwork(state_size, action_size, hidden_sizes=[128, 128]).to(
+            self.device
+        )
         self.target_net.load_state_dict(self.online_net.state_dict())
         self.target_net.eval()
 
@@ -120,7 +128,9 @@ class DQNAgent:
         if (not eval_mode) and random.random() < self.epsilon:
             return random.randrange(self.action_size)
 
-        state_tensor = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+        state_tensor = torch.tensor(
+            state, dtype=torch.float32, device=self.device
+        ).unsqueeze(0)
         with torch.no_grad():
             q_values = self.online_net(state_tensor)
         return int(torch.argmax(q_values, dim=1).item())
@@ -133,21 +143,35 @@ class DQNAgent:
         if len(self.buffer) < self.batch_size:
             return 0.0
 
-        states, actions, rewards, next_states, dones = self.buffer.sample(self.batch_size)
+        states, actions, rewards, next_states, dones = self.buffer.sample(
+            self.batch_size
+        )
 
         states_tensor = torch.tensor(states, dtype=torch.float32, device=self.device)
-        actions_tensor = torch.tensor(actions, dtype=torch.int64, device=self.device).unsqueeze(1)
-        rewards_tensor = torch.tensor(rewards, dtype=torch.float32, device=self.device).unsqueeze(1)
-        next_states_tensor = torch.tensor(next_states, dtype=torch.float32, device=self.device)
-        dones_tensor = torch.tensor(dones, dtype=torch.float32, device=self.device).unsqueeze(1)
+        actions_tensor = torch.tensor(
+            actions, dtype=torch.int64, device=self.device
+        ).unsqueeze(1)
+        rewards_tensor = torch.tensor(
+            rewards, dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
+        next_states_tensor = torch.tensor(
+            next_states, dtype=torch.float32, device=self.device
+        )
+        dones_tensor = torch.tensor(
+            dones, dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
 
         q_values = self.online_net(states_tensor).gather(1, actions_tensor)
 
         with torch.no_grad():
             if self.use_target_network:
-                next_q_values = self.target_net(next_states_tensor).max(dim=1, keepdim=True)[0]
+                next_q_values = self.target_net(next_states_tensor).max(
+                    dim=1, keepdim=True
+                )[0]
             else:
-                next_q_values = self.online_net(next_states_tensor).max(dim=1, keepdim=True)[0]
+                next_q_values = self.online_net(next_states_tensor).max(
+                    dim=1, keepdim=True
+                )[0]
             targets = rewards_tensor + self.gamma * (1.0 - dones_tensor) * next_q_values
 
         loss = self.loss_fn(q_values, targets)
@@ -158,7 +182,10 @@ class DQNAgent:
         self.optimizer.step()
 
         self.training_steps += 1
-        if self.use_target_network and self.training_steps % self.target_update_every == 0:
+        if (
+            self.use_target_network
+            and self.training_steps % self.target_update_every == 0
+        ):
             self.target_net.load_state_dict(self.online_net.state_dict())
 
         return float(loss.item())
@@ -178,7 +205,7 @@ class DQNAgent:
 
 
 def train(args: argparse.Namespace) -> None:
-    env = gym.make("Pyrace-v1").unwrapped
+    env = gym.make(args.env_id).unwrapped
     env.set_view(args.render)
 
     state_size = env.observation_space.shape[0]
@@ -215,7 +242,13 @@ def train(args: argparse.Namespace) -> None:
             next_state, reward, done, _, info = env.step(action)
             next_state = next_state.astype(np.float32)
 
-            transition = Transition(state=state, action=action, reward=float(reward), next_state=next_state, done=bool(done))
+            transition = Transition(
+                state=state,
+                action=action,
+                reward=float(reward),
+                next_state=next_state,
+                done=bool(done),
+            )
             agent.buffer.add(transition)
 
             if len(agent.buffer) >= args.learning_starts:
@@ -254,7 +287,9 @@ def train(args: argparse.Namespace) -> None:
             agent.save(os.path.join(args.model_dir, f"dqn_ep_{episode}.pt"))
 
         recent_rewards = reward_history[-20:]
-        avg_recent = float(np.mean(recent_rewards)) if recent_rewards else episode_reward
+        avg_recent = (
+            float(np.mean(recent_rewards)) if recent_rewards else episode_reward
+        )
         avg_loss = float(np.mean(losses)) if losses else 0.0
         print(
             f"Episode {episode:4d} | reward={episode_reward:9.2f} | avg20={avg_recent:9.2f} | "
@@ -263,12 +298,15 @@ def train(args: argparse.Namespace) -> None:
 
     final_model_path = os.path.join(args.model_dir, "dqn_final.pt")
     agent.save(final_model_path)
-    np.save(os.path.join(args.model_dir, "reward_history.npy"), np.array(reward_history, dtype=np.float32))
+    np.save(
+        os.path.join(args.model_dir, "reward_history.npy"),
+        np.array(reward_history, dtype=np.float32),
+    )
     print(f"Training complete. Saved model to {final_model_path}")
 
 
 def evaluate(args: argparse.Namespace) -> None:
-    env = gym.make("Pyrace-v1").unwrapped
+    env = gym.make(args.env_id).unwrapped
     env.set_view(args.render)
 
     state_size = env.observation_space.shape[0]
@@ -290,7 +328,9 @@ def evaluate(args: argparse.Namespace) -> None:
     )
 
     if not args.model_path or not os.path.exists(args.model_path):
-        raise FileNotFoundError("Please provide an existing --model-path for evaluation.")
+        raise FileNotFoundError(
+            "Please provide an existing --model-path for evaluation."
+        )
 
     agent.load(args.model_path)
 
@@ -326,6 +366,7 @@ def evaluate(args: argparse.Namespace) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Vanilla DQN for Pyrace-v1")
+    parser.add_argument("--env-id", type=str, default="Pyrace-v1")
     parser.add_argument("--mode", choices=["train", "eval"], default="train")
 
     parser.add_argument("--episodes", type=int, default=2000)

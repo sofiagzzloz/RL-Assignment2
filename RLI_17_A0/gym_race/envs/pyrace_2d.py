@@ -3,15 +3,24 @@ import math
 
 screen_width = 1500
 screen_height = 800
-check_point = ((1370, 675), (1370, 215), (935, 465), (630, 180), (320, 160), (130, 675), (550, 702)) # race_track_ie.png
+check_point = (
+    (1370, 675),
+    (1370, 215),
+    (935, 465),
+    (630, 180),
+    (320, 160),
+    (130, 675),
+    (550, 702),
+)  # race_track_ie.png
 """
 Area for text boxes:
 750,0 - 1500,100
 1055,290 - 1300,605
 """
 
+
 class Car:
-    def __init__(self, car_file, map, pos): # map_file
+    def __init__(self, car_file, map, pos):  # map_file
         # self.map = pygame.image.load(map_file)
         self.map = map
         self.surface = pygame.image.load(car_file)
@@ -41,14 +50,14 @@ class Car:
         self.draw_radar(screen)
 
     def draw_radar(self, screen):
-        for r in self.radars: # or self.radars_for_draw
+        for r in self.radars:  # or self.radars_for_draw
             pos, dist = r
             pygame.draw.line(screen, (0, 255, 0), self.center, pos, 1)
             pygame.draw.circle(screen, (0, 255, 0), pos, 5)
 
-    def pixel_at(self,x,y):
+    def pixel_at(self, x, y):
         try:
-            return self.map.get_at((x,y))
+            return self.map.get_at((x, y))
         except:
             return (255, 255, 255, 255)
 
@@ -61,16 +70,29 @@ class Car:
 
     def check_radar(self, degree, map=None):
         len = 0
-        x = int(self.center[0] + math.cos(math.radians(360 - (self.angle + degree))) * len)
-        y = int(self.center[1] + math.sin(math.radians(360 - (self.angle + degree))) * len)
+        x = int(
+            self.center[0] + math.cos(math.radians(360 - (self.angle + degree))) * len
+        )
+        y = int(
+            self.center[1] + math.sin(math.radians(360 - (self.angle + degree))) * len
+        )
 
         while not self.pixel_at(x, y) == (255, 255, 255, 255) and len < 200:
             len = len + 1
-            x = int(self.center[0] + math.cos(math.radians(360 - (self.angle + degree))) * len)
-            y = int(self.center[1] + math.sin(math.radians(360 - (self.angle + degree))) * len)
+            x = int(
+                self.center[0]
+                + math.cos(math.radians(360 - (self.angle + degree))) * len
+            )
+            y = int(
+                self.center[1]
+                + math.sin(math.radians(360 - (self.angle + degree))) * len
+            )
 
-        dist = int(math.sqrt(math.pow(x - self.center[0], 2) + math.pow(y - self.center[1], 2)))
+        dist = int(
+            math.sqrt(math.pow(x - self.center[0], 2) + math.pow(y - self.center[1], 2))
+        )
         self.radars.append([(x, y), dist])
+
     """
     #------------------------------------------------------------------------------
     def draw_collision(self, screen):
@@ -92,6 +114,7 @@ class Car:
         dist = int(math.sqrt(math.pow(x - self.center[0], 2) + math.pow(y - self.center[1], 2)))
         self.radars_for_draw.append([(x, y), dist])
     """
+
     def check_checkpoint(self):
         p = check_point[self.current_check]
         self.prev_distance = self.cur_distance
@@ -107,20 +130,22 @@ class Car:
                 self.goal = False
 
         self.cur_distance = dist
-    #------------------------------------------------------------------------------
 
+    # ------------------------------------------------------------------------------
 
-    def update(self,map=None):
-        #check speed
+    def update(self, map=None):
+        # check speed
         self.speed -= 0.5
-        if self.speed > 10: self.speed = 10
-        if self.speed < 1:  self.speed = 1
-        
+        if self.speed > 10:
+            self.speed = 10
+        if self.speed < 1:
+            self.speed = 1
+
         # required for NEAT
         if map is not None:
-            self.speed = 7 # NEAT
+            self.speed = 7  # NEAT
 
-        #check position
+        # check position
         self.rotate_surface = self.rot_center(self.surface, self.angle)
         self.pos[0] += math.cos(math.radians(360 - self.angle)) * self.speed
         if self.pos[0] < 20:
@@ -139,14 +164,22 @@ class Car:
         # caculate 4 collision points
         self.center = [int(self.pos[0]) + 50, int(self.pos[1]) + 50]
         len = 40
-        left_top = [self.center[0] + math.cos(math.radians(360 - (self.angle + 30))) * len,
-                    self.center[1] + math.sin(math.radians(360 - (self.angle + 30))) * len]
-        right_top = [self.center[0] + math.cos(math.radians(360 - (self.angle + 150))) * len,
-                     self.center[1] + math.sin(math.radians(360 - (self.angle + 150))) * len]
-        left_bottom = [self.center[0] + math.cos(math.radians(360 - (self.angle + 210))) * len,
-                       self.center[1] + math.sin(math.radians(360 - (self.angle + 210))) * len]
-        right_bottom = [self.center[0] + math.cos(math.radians(360 - (self.angle + 330))) * len,
-                        self.center[1] + math.sin(math.radians(360 - (self.angle + 330))) * len]
+        left_top = [
+            self.center[0] + math.cos(math.radians(360 - (self.angle + 30))) * len,
+            self.center[1] + math.sin(math.radians(360 - (self.angle + 30))) * len,
+        ]
+        right_top = [
+            self.center[0] + math.cos(math.radians(360 - (self.angle + 150))) * len,
+            self.center[1] + math.sin(math.radians(360 - (self.angle + 150))) * len,
+        ]
+        left_bottom = [
+            self.center[0] + math.cos(math.radians(360 - (self.angle + 210))) * len,
+            self.center[1] + math.sin(math.radians(360 - (self.angle + 210))) * len,
+        ]
+        right_bottom = [
+            self.center[0] + math.cos(math.radians(360 - (self.angle + 330))) * len,
+            self.center[1] + math.sin(math.radians(360 - (self.angle + 330))) * len,
+        ]
         self.four_points = [left_top, right_top, left_bottom, right_bottom]
 
         # required for NEAT
@@ -167,7 +200,7 @@ class Car:
         self.car.draw(self.screen)
         """
 
-    #-------------------------------------------------------------------
+    # -------------------------------------------------------------------
     # required for NEAT
     def get_data(self):
         radars = self.radars
@@ -181,7 +214,8 @@ class Car:
 
     def get_reward(self):
         return self.distance / 50.0
-    #-------------------------------------------------------------------
+
+    # -------------------------------------------------------------------
 
     def rot_center(self, image, angle):
         orig_rect = image.get_rect()
@@ -193,25 +227,45 @@ class Car:
 
 
 class PyRace2D:
-    def __init__(self, is_render = True, car = True, mode = 0):
+    def __init__(
+        self,
+        is_render=True,
+        car=True,
+        mode=0,
+        action_mode="basic",
+        observation_mode="discrete",
+        reward_mode="sparse",
+    ):
         # print('PyRace2D - INIT ENVIRONMENT')
         pygame.init()
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("Arial", 30)
-        self.map = pygame.image.load('race_track_ie.png')
+        self.map = pygame.image.load("race_track_ie.png")
         self.cars = []
         if car:
-            self.car = Car('car.png', self.map, [500, 650])
+            self.car = Car("car.png", self.map, [500, 650])
             self.cars.append(self.car)
-        self.game_speed = 60*0 # as fast as possible...
+        self.game_speed = 60 * 0  # as fast as possible...
         self.is_render = is_render
-        self.mode = mode # 0: normal, 1:dark, 2: normal (force display)
+        # Keep mode numeric even if callers pass strings such as "human" by mistake.
+        self.mode = (
+            int(mode) if isinstance(mode, int) else 0
+        )  # 0: normal, 1:dark, 2: normal (force display)
+        self.action_mode = action_mode
+        self.observation_mode = observation_mode
+        self.reward_mode = reward_mode
 
     def action(self, action):
-        if action == 0: self.car.speed += 2
-        elif action == 1: self.car.angle += 5
-        elif action == 2: self.car.angle -= 5
+        if action == 0:
+            self.car.speed += 2
+        elif action == 1:
+            self.car.angle += 5
+        elif action == 2:
+            self.car.angle -= 5
+        elif action == 3 and self.action_mode == "extended":
+            # Optional brake action for finer speed control.
+            self.car.speed -= 2
 
         self.car.update()
         self.car.check_collision()
@@ -222,6 +276,9 @@ class PyRace2D:
             self.car.check_radar(d)
 
     def evaluate(self):
+        if self.reward_mode == "shaped":
+            return self.evaluate_shaped()
+
         reward = 0
         """
         if self.car.check_flag:
@@ -229,7 +286,7 @@ class PyRace2D:
             reward = 2000 - self.car.time_spent
             self.car.time_spent = 0
         """
-        if not self.car.is_alive: # crash
+        if not self.car.is_alive:  # crash
             reward = -10000 + self.car.distance
 
         elif self.car.goal:
@@ -237,6 +294,20 @@ class PyRace2D:
             reward = 10000
             # print('goal',self.car.current_check,len(check_point))
         return reward
+
+    def evaluate_shaped(self):
+        # Reward dense progress to checkpoint, penalize crashes, and bonus goal completion.
+        if not self.car.is_alive:
+            return -100.0
+
+        if self.car.goal:
+            return 300.0
+
+        progress = (self.car.prev_distance - self.car.cur_distance) / 20.0
+        speed_term = 0.05 * self.car.speed
+        checkpoint_bonus = 40.0 if self.car.check_flag else 0.0
+        self.car.check_flag = False
+        return float(progress + speed_term + checkpoint_bonus)
 
     def is_done(self):
         if not self.car.is_alive or self.car.goal:
@@ -246,6 +317,9 @@ class PyRace2D:
         return False
 
     def observe(self):
+        if self.observation_mode == "continuous":
+            return self.observe_continuous()
+
         # return state
         radars = self.car.radars
         # print('RADARS',radars)
@@ -257,7 +331,22 @@ class PyRace2D:
 
         return ret
 
-    def view_(self, msgs=[]): # RENDERING...
+    def observe_continuous(self):
+        # 5 radar distances + speed + normalized distance to next checkpoint.
+        radars = self.car.radars
+        ret = [0.0, 0.0, 0.0, 0.0, 0.0]
+        for i, r in enumerate(radars[:5]):
+            ret[i] = min(1.0, float(r[1]) / 200.0)
+
+        speed_norm = min(1.0, max(0.0, float(self.car.speed) / 10.0))
+        max_dist = math.sqrt((screen_width**2) + (screen_height**2))
+        cp = check_point[self.car.current_check]
+        cp_dist = get_distance(cp, self.car.center)
+        cp_dist_norm = min(1.0, max(0.0, float(cp_dist) / max_dist))
+
+        return ret + [speed_norm, cp_dist_norm]
+
+    def view_(self, msgs=[]):  # RENDERING...
         # draw game
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -283,28 +372,30 @@ class PyRace2D:
             self.car.check_radar_for_draw(d)
         """
         if len(self.cars) == 1:
-            pygame.draw.circle(self.screen, (255, 255, 0), check_point[self.car.current_check], 70, 1)
+            pygame.draw.circle(
+                self.screen, (255, 255, 0), check_point[self.car.current_check], 70, 1
+            )
         """
         self.car.draw_collision(self.screen)
         """
         # self.car.draw_radar(self.screen) # moved to car.draw()
-        
+
         # self.car.draw(self.screen)
         for car in self.cars:
             if car.get_alive():
                 car.draw(self.screen)
 
         # Display messages...
-        for k,msg in enumerate(msgs):
+        for k, msg in enumerate(msgs):
             myfont = pygame.font.SysFont("impact", 20)
-            label = myfont.render(msg, 1, (0,0,0))
-            self.screen.blit(label,(1055,290+k*25))
+            label = myfont.render(msg, 1, (0, 0, 0))
+            self.screen.blit(label, (1055, 290 + k * 25))
             pass
 
         text = self.font.render("Press 'm' to change view mode", True, (255, 255, 0))
         text_rect = text.get_rect()
         # text_rect.center = (screen_width/2, 100)
-        text_rect.topleft = (750,0)
+        text_rect.topleft = (750, 0)
         self.screen.blit(text, text_rect)
 
         pygame.display.flip()
@@ -312,4 +403,4 @@ class PyRace2D:
 
 
 def get_distance(p1, p2):
-	return math.sqrt(math.pow((p1[0] - p2[0]), 2) + math.pow((p1[1] - p2[1]), 2))
+    return math.sqrt(math.pow((p1[0] - p2[0]), 2) + math.pow((p1[1] - p2[1]), 2))
