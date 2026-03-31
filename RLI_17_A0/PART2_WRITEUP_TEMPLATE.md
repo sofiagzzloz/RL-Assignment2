@@ -58,6 +58,23 @@ Why this helps:
 - Denser learning signal than sparse crash/goal only reward.
 - Better credit assignment during long episodes.
 
+### 2.4 Advanced DQN training techniques
+
+The advanced training script `dqn_vanilla/Pyrace_RL_DQN_Advanced.py` applies:
+
+- Double DQN for less Q overestimation
+- Dueling network architecture for better state-value/action-advantage decomposition
+- Prioritized Experience Replay for more sample-efficient updates
+- n-step returns for faster propagation of useful rewards
+- Soft target network updates for stable learning
+- Huber loss and gradient clipping for robust optimization
+- Optional reward normalization to reduce scale sensitivity
+
+Why this helps:
+
+- Faster policy improvement on the shaped `Pyrace-v3` task.
+- More stable training across long runs (>2000 episodes).
+
 ## 3. Environments
 
 - `Pyrace-v1`: original baseline
@@ -83,9 +100,25 @@ Training improved variant:
 
 - `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN.py --env-id Pyrace-v3 --mode train`
 
+Training improved variant with advanced techniques:
+
+- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode train --env-id Pyrace-v3 --episodes 3000 --normalize-reward --model-dir dqn_vanilla/models_DQN_adv_v01`
+
+Long training (example 6000 episodes):
+
+- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode train --env-id Pyrace-v3 --episodes 6000 --normalize-reward --model-dir dqn_vanilla/models_DQN_adv_6k`
+
+Resume long training from a checkpoint:
+
+- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode train --env-id Pyrace-v3 --episodes 6000 --resume-from dqn_vanilla/models_DQN_adv_6k/dqn_adv_ep_3000.pt --resume-episode 3000 --normalize-reward --model-dir dqn_vanilla/models_DQN_adv_6k`
+
 Evaluate improved variant:
 
 - `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN.py --env-id Pyrace-v3 --mode eval --model-path ./dqn_vanilla/models_DQN_v03_part2/dqn_final.pt --eval-episodes 10`
+
+Evaluate advanced model:
+
+- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode eval --env-id Pyrace-v3 --model-path ./dqn_vanilla/models_DQN_adv_v01/dqn_adv_best.pt --eval-episodes 10`
 
 ## 6. Final Part 2 Results
 

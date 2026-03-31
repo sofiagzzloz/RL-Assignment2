@@ -132,3 +132,69 @@ class RaceEnvV3(gym.Env):
 
     def set_msgs(self, msgs):
         self.msgs = msgs
+
+
+class RaceEnvV4(gym.Env):
+    metadata = {"render_modes": ["human"], "render_fps": 30}
+
+    def __init__(self, render_mode="human"):
+        print("init v4")
+        self.action_space = spaces.Discrete(7)
+        # 5 radars + speed + checkpoint distance + turn bias + front clearance.
+        self.observation_space = spaces.Box(
+            low=np.zeros(9, dtype=np.float32),
+            high=np.ones(9, dtype=np.float32),
+            dtype=np.float32,
+        )
+        self.is_view = True
+        self.msgs = []
+        self.pyrace = PyRace2D(
+            self.is_view,
+            mode=0,
+            action_mode="sharp",
+            observation_mode="continuous_sharp",
+            reward_mode="shaped_sharp",
+        )
+
+    def reset(self, seed=None, options=None):
+        mode = self.pyrace.mode
+        del self.pyrace
+        self.is_view = True
+        self.msgs = []
+        self.pyrace = PyRace2D(
+            self.is_view,
+            mode=mode,
+            action_mode="sharp",
+            observation_mode="continuous_sharp",
+            reward_mode="shaped_sharp",
+        )
+        obs = self.pyrace.observe()
+        return np.array(obs, dtype=np.float32), {}
+
+    def step(self, action):
+        self.pyrace.action(action)
+        reward = self.pyrace.evaluate()
+        done = self.pyrace.is_done()
+        obs = self.pyrace.observe()
+        return (
+            np.array(obs, dtype=np.float32),
+            reward,
+            done,
+            False,
+            {
+                "dist": self.pyrace.car.distance,
+                "check": self.pyrace.car.current_check,
+                "crash": not self.pyrace.car.is_alive,
+                "speed": self.pyrace.car.speed,
+            },
+        )
+
+    def render(self):
+        if self.is_view:
+            self.pyrace.view_(self.msgs)
+
+    def set_view(self, flag):
+        self.is_view = flag
+
+    def set_msgs(self, msgs):
+        self.msgs = msgs

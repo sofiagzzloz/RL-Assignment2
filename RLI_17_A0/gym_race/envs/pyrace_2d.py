@@ -257,15 +257,34 @@ class PyRace2D:
         self.reward_mode = reward_mode
 
     def action(self, action):
-        if action == 0:
-            self.car.speed += 2
-        elif action == 1:
-            self.car.angle += 5
-        elif action == 2:
-            self.car.angle -= 5
-        elif action == 3 and self.action_mode == "extended":
-            # Optional brake action for finer speed control.
-            self.car.speed -= 2
+        if self.action_mode == "sharp":
+            # Sharp-turn control mode with combined steering+brake actions.
+            if action == 0:  # accelerate
+                self.car.speed += 2
+            elif action == 1:  # turn left
+                self.car.angle += 6
+            elif action == 2:  # turn right
+                self.car.angle -= 6
+            elif action == 3:  # strong brake
+                self.car.speed -= 3.5
+            elif action == 4:  # turn left while braking
+                self.car.angle += 5
+                self.car.speed -= 2.5
+            elif action == 5:  # turn right while braking
+                self.car.angle -= 5
+                self.car.speed -= 2.5
+            elif action == 6:  # coast
+                pass
+        else:
+            if action == 0:
+                self.car.speed += 2
+            elif action == 1:
+                self.car.angle += 5
+            elif action == 2:
+                self.car.angle -= 5
+            elif action == 3 and self.action_mode == "extended":
+                # Optional brake action for finer speed control.
+                self.car.speed -= 2
 
         self.car.update()
         self.car.check_collision()
@@ -276,6 +295,9 @@ class PyRace2D:
             self.car.check_radar(d)
 
     def evaluate(self):
+        if self.reward_mode == "shaped_sharp":
+            return self.evaluate_shaped_sharp()
+
         if self.reward_mode == "shaped":
             return self.evaluate_shaped()
 
@@ -309,6 +331,27 @@ class PyRace2D:
         self.car.check_flag = False
         return float(progress + speed_term + checkpoint_bonus)
 
+    def evaluate_shaped_sharp(self):
+        # Strongly discourage entering tight turns too fast and reward stable progress.
+        if not self.car.is_alive:
+            return -180.0
+
+        if self.car.goal:
+            return 500.0
+
+        progress = (self.car.prev_distance - self.car.cur_distance) / 18.0
+        checkpoint_bonus = 45.0 if self.car.check_flag else 0.0
+
+        front_dist = self._front_distance()
+        safe_speed_bonus = 0.04 * self.car.speed * min(1.0, front_dist / 90.0)
+
+        overspeed_penalty = 0.0
+        if front_dist < 60.0 and self.car.speed > 4.0:
+            overspeed_penalty = -((self.car.speed - 4.0) * (60.0 - front_dist) / 10.0)
+
+        self.car.check_flag = False
+        return float(progress + checkpoint_bonus + safe_speed_bonus + overspeed_penalty)
+
     def is_done(self):
         if not self.car.is_alive or self.car.goal:
             self.car.current_check = 0
@@ -317,6 +360,9 @@ class PyRace2D:
         return False
 
     def observe(self):
+        if self.observation_mode == "continuous_sharp":
+            return self.observe_continuous_sharp()
+
         if self.observation_mode == "continuous":
             return self.observe_continuous()
 
@@ -345,6 +391,31 @@ class PyRace2D:
         cp_dist_norm = min(1.0, max(0.0, float(cp_dist) / max_dist))
 
         return ret + [speed_norm, cp_dist_norm]
+
+    def observe_continuous_sharp(self):
+        # 5 radar distances + speed + checkpoint distance + turn bias + front clearance.
+        radars = self.car.radars
+        ret = [0.0, 0.0, 0.0, 0.0, 0.0]
+        for i, r in enumerate(radars[:5]):
+            ret[i] = min(1.0, float(r[1]) / 200.0)
+
+        speed_norm = min(1.0, max(0.0, float(self.car.speed) / 10.0))
+        max_dist = math.sqrt((screen_width**2) + (screen_height**2))
+        cp = check_point[self.car.current_check]
+        cp_dist = get_distance(cp, self.car.center)
+        cp_dist_norm = min(1.0, max(0.0, float(cp_dist) / max_dist))
+
+        left_front = ret[1]
+        right_front = ret[3]
+        turn_bias = (right_front - left_front + 1.0) / 2.0  # map [-1, 1] to [0, 1]
+        front_clear = ret[2]
+
+        return ret + [speed_norm, cp_dist_norm, turn_bias, front_clear]
+
+    def _front_distance(self):
+        if len(self.car.radars) < 3:
+            return 0.0
+        return float(self.car.radars[2][1])
 
     def view_(self, msgs=[]):  # RENDERING...
         # draw game

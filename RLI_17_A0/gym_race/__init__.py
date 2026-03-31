@@ -11,3 +11,9 @@ register(
     entry_point="gym_race.envs:RaceEnvV3",
     max_episode_steps=2_000,
 )
+
+register(
+    id="Pyrace-v4",
+    entry_point="gym_race.envs:RaceEnvV4",
+    max_episode_steps=2_000,
+)
