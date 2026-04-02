@@ -1,170 +1,62 @@
-# Assignment 17.00 - Part 02 (Pit lane repairs)
+# Assignment 17.00 - Part 01 and Part 02 (What Was Done)
 
-## 1. Goal
+Date updated: 2026-04-02
 
-Improve the DQN driving model by enhancing:
+## Part 01 - Refactor from Q-Table to DQN
 
-- observations (state information)
-- actions (agent controls)
-- reward function (learning signal)
+Completed work:
 
-## 2. Implemented Improvements
+- Replaced tabular Q-learning logic with a neural-network DQN agent in [RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN.py](RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN.py).
+- Implemented a feed-forward Q-network (MLP) to estimate Q-values from state vectors.
+- Implemented replay memory and random minibatch sampling.
+- Implemented epsilon-greedy exploration with decay.
+- Implemented training and evaluation modes using command-line arguments.
+- Added model checkpoint saving/loading (`dqn_best.pt`, periodic checkpoints, `dqn_final.pt`).
+- Kept compatibility with the original baseline environment (`Pyrace-v1`).
 
-### 2.1 Continuous observations
+Code status:
 
-A new environment variant `Pyrace-v3` was created with continuous observations.
+- DQN training pipeline executes end-to-end (verified by smoke test).
 
-State vector (size 7):
+## Part 02 - Environment and Learning Improvements
 
-- 5 normalized radar distances in range [0, 1]
-- normalized speed in range [0, 1]
-- normalized distance to next checkpoint in range [0, 1]
+Completed work:
 
-Why this helps:
+- Added and registered improved environment variant `Pyrace-v3` in [RLI_17_A0/gym_race/**init**.py](RLI_17_A0/gym_race/__init__.py).
+- Added `RaceEnvV3` in [RLI_17_A0/gym_race/envs/race_env.py](RLI_17_A0/gym_race/envs/race_env.py).
+- Extended simulator behavior in [RLI_17_A0/gym_race/envs/pyrace_2d.py](RLI_17_A0/gym_race/envs/pyrace_2d.py) with:
+  - continuous observation mode,
+  - extended action mode (including brake),
+  - shaped reward mode.
 
-- Preserves more information than coarse bucketization.
-- Provides speed context and checkpoint progress context to the policy.
+State/action/reward changes in `Pyrace-v3`:
 
-### 2.2 Expanded action space
+- Observation size changed from 5 discrete radar buckets to 7 continuous features:
+  - 5 normalized radar distances,
+  - normalized speed,
+  - normalized distance to current checkpoint.
+- Action space changed from 3 to 4 actions by adding brake.
+- Reward changed from sparse crash/goal style to shaped reward with progress, speed term, checkpoint bonus, collision penalty, and goal bonus.
 
-A new optional action was introduced:
+Additional Part 02 model work:
 
-- `BRAKE` (action 3): decreases speed for finer control.
+- Implemented advanced DQN pipeline in [RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py](RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py) using:
+  - Double DQN,
+  - Dueling architecture,
+  - Prioritized Experience Replay,
+  - n-step returns,
+  - soft target updates,
+  - Huber loss and gradient clipping,
+  - optional reward normalization.
 
-Action space in `Pyrace-v3`:
+## Current Verified Outcome
 
-- 0 accelerate
-- 1 turn left
-- 2 turn right
-- 3 brake
+- Part 01 implementation exists and runs.
+- Part 02 implementation exists and runs.
+- `Pyrace-v3` evaluation with saved model `models_DQN_v03_part2/dqn_final.pt` produced stable rewards during spot-checking (`2178.18`, `2178.18`).
 
-Why this helps:
+## Best Model Run Command (visual)
 
-- Better cornering control.
-- Reduces overshooting and collision risk.
+From `RLI_17_A0/dqn_vanilla` with the project virtual environment active:
 
-### 2.3 Engineered reward function
-
-A shaped reward was implemented:
-
-- positive reward for reducing distance to next checkpoint
-- small positive speed term
-- checkpoint bonus when passing checkpoint
-- strong collision penalty
-- goal completion bonus
-
-Why this helps:
-
-- Denser learning signal than sparse crash/goal only reward.
-- Better credit assignment during long episodes.
-
-### 2.4 Advanced DQN training techniques
-
-The advanced training script `dqn_vanilla/Pyrace_RL_DQN_Advanced.py` applies:
-
-- Double DQN for less Q overestimation
-- Dueling network architecture for better state-value/action-advantage decomposition
-- Prioritized Experience Replay for more sample-efficient updates
-- n-step returns for faster propagation of useful rewards
-- Soft target network updates for stable learning
-- Huber loss and gradient clipping for robust optimization
-- Optional reward normalization to reduce scale sensitivity
-
-Why this helps:
-
-- Faster policy improvement on the shaped `Pyrace-v3` task.
-- More stable training across long runs (>2000 episodes).
-
-## 3. Environments
-
-- `Pyrace-v1`: original baseline
-- `Pyrace-v3`: improved Part 2 variant
-
-## 4. DQN script changes
-
-`Pyrace_RL_DQN.py` now accepts:
-
-- `--env-id` (default `Pyrace-v1`)
-
-This allows direct comparison between baseline and improved environment.
-
-## 5. How to run
-
-From repository root (using project venv):
-
-Training baseline:
-
-- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN.py --env-id Pyrace-v1 --mode train`
-
-Training improved variant:
-
-- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN.py --env-id Pyrace-v3 --mode train`
-
-Training improved variant with advanced techniques:
-
-- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode train --env-id Pyrace-v3 --episodes 3000 --normalize-reward --model-dir dqn_vanilla/models_DQN_adv_v01`
-
-Long training (example 6000 episodes):
-
-- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode train --env-id Pyrace-v3 --episodes 6000 --normalize-reward --model-dir dqn_vanilla/models_DQN_adv_6k`
-
-Resume long training from a checkpoint:
-
-- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode train --env-id Pyrace-v3 --episodes 6000 --resume-from dqn_vanilla/models_DQN_adv_6k/dqn_adv_ep_3000.pt --resume-episode 3000 --normalize-reward --model-dir dqn_vanilla/models_DQN_adv_6k`
-
-Evaluate improved variant:
-
-- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN.py --env-id Pyrace-v3 --mode eval --model-path ./dqn_vanilla/models_DQN_v03_part2/dqn_final.pt --eval-episodes 10`
-
-Evaluate advanced model:
-
-- `./.venv/Scripts/python.exe RLI_17_A0/dqn_vanilla/Pyrace_RL_DQN_Advanced.py --mode eval --env-id Pyrace-v3 --model-path ./dqn_vanilla/models_DQN_adv_v01/dqn_adv_best.pt --eval-episodes 10`
-
-## 6. Final Part 2 Results
-
-Training setup used:
-
-- Environment: `Pyrace-v3`
-- Episodes: 2000
-- Output folder: `dqn_vanilla/models_DQN_v03_part2`
-
-Training completion:
-
-- Final episode: 2000
-- Final training message: `Training complete. Saved model to dqn_vanilla/models_DQN_v03_part2/dqn_final.pt`
-- Final episode reward: `452.74`
-- Final avg20 reward: `1135.85`
-
-Evaluation (10 episodes, greedy policy):
-
-- Episode rewards: `2178.18` for all 10 episodes
-- Mean reward: `2178.18`
-- Standard deviation: `0.00`
-
-Interpretation:
-
-- The learned policy is stable in evaluation mode.
-- Part 2 design choices (continuous observations, brake action, shaped reward) clearly produce higher and more consistent performance than the sparse baseline behavior.
-
-## 7. Comparison Plan (Optional Extension)
-
-For a fair comparison:
-
-- Use same seed, episodes, and max steps for both envs.
-- Compare:
-  - average reward over last 20 episodes
-  - crash frequency
-  - checkpoints reached
-  - qualitative driving smoothness
-
-## 8. Discussion Points for Report
-
-- Continuous features improve state fidelity but can increase optimization difficulty.
-- Brake action increases control expressiveness and may improve safety.
-- Reward shaping accelerates learning but may bias behavior if not aligned with final objective.
-
-## 9. Optional Next Steps (Bonus Direction)
-
-- Replace vanilla DQN with Double DQN + target net updates.
-- Try SAC/DDPG/PPO with `Pyrace-v3`.
-- Add checkpoint-based curriculum and evaluate sample efficiency.
+- `python.exe Pyrace_RL_DQN_SharpTurns.py --mode eval --model-path dqn_vanilla/models_DQN_sharp_6k_v01/dqn_adv_final.pt --eval-episodes 10 --max-steps 1000 --render`
