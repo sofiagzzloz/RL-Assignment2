@@ -1,4 +1,10 @@
+import os
 import pygame
+
+# Try to use a dummy display or headless mode for macOS compatibility
+if os.getenv("DISPLAY") is None and os.path.exists("/opt/homebrew/bin"):
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+
 import math
 
 screen_width = 1500
@@ -23,7 +29,12 @@ class Car:
     def __init__(self, car_file, map, pos):  # map_file
         # self.map = pygame.image.load(map_file)
         self.map = map
-        self.surface = pygame.image.load(car_file)
+        try:
+            self.surface = pygame.image.load(car_file)
+        except (pygame.error, Exception):
+            # Car image loading failed, create a dummy surface
+            self.surface = pygame.Surface((100, 100))
+            self.surface.fill((255, 0, 0))  # Red square as placeholder
         self.surface = pygame.transform.scale(self.surface, (100, 100))
         self.rotate_surface = self.surface
         self.pos = pos
@@ -240,8 +251,21 @@ class PyRace2D:
         pygame.init()
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont("Arial", 30)
-        self.map = pygame.image.load("race_track_ie.png")
+        try:
+            self.font = pygame.font.SysFont("Arial", 30)
+        except (NotImplementedError, ImportError):
+            # Font module not available in headless mode
+            self.font = None
+        
+        try:
+            self.map = pygame.image.load("race_track_ie.png")
+        except (pygame.error, Exception) as e:
+            # Image loading failed, create a dummy surface
+            import sys
+            print(f"Warning: Could not load race track image: {e}", file=sys.stderr)
+            self.map = pygame.Surface((screen_width, screen_height))
+            self.map.fill((100, 100, 100))
+        
         self.cars = []
         if car:
             self.car = Car("car.png", self.map, [500, 650])
@@ -458,16 +482,19 @@ class PyRace2D:
 
         # Display messages...
         for k, msg in enumerate(msgs):
-            myfont = pygame.font.SysFont("impact", 20)
-            label = myfont.render(msg, 1, (0, 0, 0))
-            self.screen.blit(label, (1055, 290 + k * 25))
-            pass
+            try:
+                myfont = pygame.font.SysFont("impact", 20)
+                label = myfont.render(msg, 1, (0, 0, 0))
+                self.screen.blit(label, (1055, 290 + k * 25))
+            except (NotImplementedError, ImportError):
+                pass
 
-        text = self.font.render("Press 'm' to change view mode", True, (255, 255, 0))
-        text_rect = text.get_rect()
-        # text_rect.center = (screen_width/2, 100)
-        text_rect.topleft = (750, 0)
-        self.screen.blit(text, text_rect)
+        if self.font is not None:
+            text = self.font.render("Press 'm' to change view mode", True, (255, 255, 0))
+            text_rect = text.get_rect()
+            # text_rect.center = (screen_width/2, 100)
+            text_rect.topleft = (750, 0)
+            self.screen.blit(text, text_rect)
 
         pygame.display.flip()
         self.clock.tick(self.game_speed)
