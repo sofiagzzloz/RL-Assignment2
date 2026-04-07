@@ -1,2 +1,8 @@
 .venv/
 /venv/
+
+# Python bytecode caches
+__pycache__/
+
+# Submission artifacts generated during local runs
+SUBMISSION_GROUP2/RLI_17_A0/dqn_vanilla/__pycache__/
