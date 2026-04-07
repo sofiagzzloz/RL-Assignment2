@@ -24,11 +24,11 @@ Advanced DQN adds multiple techniques aimed at speed and stability:
 
 ## Files
 
-- `Pyrace_RL_DQN.py` → Train/evaluate DQN agent
-- `Pyrace_RL_DQN_Advanced.py` → Train/evaluate advanced DQN agent
-- `run_experiment.py` → One-command preset launcher (`fast`, `stable`, `long`)
-- `smoke_test_dqn.py` → Tiny sanity harness (2 very short episodes)
-- `requirements.txt` → Minimal dependencies for this part
+- `Pyrace_RL_DQN.py`: Train/evaluate DQN agent
+- `Pyrace_RL_DQN_Advanced.py`: Train/evaluate advanced DQN agent
+- `run_experiment.py`: One-command preset launcher (`fast`, `stable`, `long`)
+- `smoke_test_dqn.py`: Tiny sanity harness (2 very short episodes)
+- `requirements.txt`: Minimal dependencies for this part
 
 ## Setup
 
